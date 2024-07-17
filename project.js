@@ -28,8 +28,8 @@ const SYMBOL_VALUES = {
 
 const deposit = () => {
     while (true) {
-        const depositAmount = prompt("Deposit amount: ");
-        const numberDepositAmout = parseFloat(depositAmount);
+        const balance = prompt("Deposit amount: $");
+        const numberDepositAmout = parseFloat(balance);
 
         if (isNaN(numberDepositAmout) || numberDepositAmout <= 0) {
             console.log("Please enter a valid deposit amount");
@@ -52,12 +52,12 @@ const getNumberOfLines = () => {
     }
 };
 
-const getBetAmount = (depositAmount, lines) => {
+const getBetAmount = (balance, lines) => {
     while (true) {
-        const betAmount = prompt("Bet amount: ");
+        const betAmount = prompt("Bet amount: $");
         const numberBetAmount = parseFloat(betAmount);
 
-        if (isNaN(numberBetAmount) || numberBetAmount <= 0 || numberBetAmount > depositAmount || numberBetAmount > depositAmount / lines) {
+        if (isNaN(numberBetAmount) || numberBetAmount <= 0 || numberBetAmount > balance || numberBetAmount > balance / lines) {
             console.log("Invalid bet amount, try again.");
         } else {
             return numberBetAmount;
@@ -83,8 +83,7 @@ const spin = () => {
             reelSymbols.splice(randomIndex, 1)
         }
     }
-    transpose(reels);
-    return reels;
+    return transpose(reels);
 }
 
 const transpose = (reels) => {
@@ -92,10 +91,11 @@ const transpose = (reels) => {
 
     for (let i = 0; i < ROWS; i++){
         rows.push([]);
-        for (let j = 0; j < 0; j++){
+        for (let j = 0; j < COLUMNS; j++){
             rows[i].push(reels[j][i]);
         }
     }
+    return rows;
 }
 
 const printRows = (matrix) => {
@@ -111,7 +111,7 @@ const printRows = (matrix) => {
     }
 }
 
-const checkWin = (depositAmount, lines, betAmount, spun) => {
+const checkWin = (balance, lines, betAmount, spun) => {
     //need to check the rows to see if they match to declare a win or a loss...
     //check rows
     //if win, add winning, if loss, subtract bet from deposit
@@ -135,27 +135,59 @@ const checkWin = (depositAmount, lines, betAmount, spun) => {
     //     }       
     // }
 
-    for (let i = 0; i < ROWS; i++) {
-      if (isRowEqual(spun, i)) {
-        count++;
-      }
+    // for (let i = 0; i < ROWS; i++) {
+    //   if (isRowEqual(spun, i)) {
+    //     count++;
+    //   }
+    // }
+
+    const isRowEqualAndGetSymbol = (row) => {
+        const firstElement = row[0];
+        const allEqual = row.every((element) => element === firstElement);
+        return { allEqual, firstElement };
+    }
+
+    for (let i = 0; i < ROWS; i++){
+        const { allEqual, firstElement } = isRowEqualAndGetSymbol(spun[i]);
+        if (allEqual){
+            count++;
+            multiplier = SYMBOL_VALUES[firstElement];
+        }
     }
 
     if (count === 0) {
-        const balance = depositAmount - betAmount*lines;
-        console.log("Balance: " + balance);
+        balance -= betAmount*lines;
+        console.log("Balance: $" + balance);
     }
     else{
-        const winning = betAmount * Math.min(lines, count);
-        const balance = depositAmount + winning;
-        console.log("You have won $" + winning + "! New balance: " + balance);
+        const winning = betAmount * multiplier * count;
+        const balance = balance + winning;
+        console.log("You have won $" + winning + "! New balance: $" + balance);
+    }
+    return balance;
+}
+
+const game = () => {
+    let balance = deposit();
+
+    while(true){
+        // const balance = deposit();
+        const lines = getNumberOfLines();
+        const betAmount = getBetAmount(balance, lines);
+        // balance -= betAmount * lines;
+        const spun = spin();
+        // console.table(spun);
+        printRows(spun);
+        balance = checkWin(balance, lines, betAmount, spun);
+
+        if(balance <= 0){
+            console.log("You ran out of money!");
+            break;
+        }
+        const playAgain = prompt("Do you want to play again? (y/n)? ")
+
+        if (playAgain.toLowerCase() !== 'y') break;
     }
 }
 
-const depositAmount = deposit();
-const lines = getNumberOfLines();
-const betAmount = getBetAmount(depositAmount, lines);
-const spun = spin();
-// console.table(spun);
-printRows(spun);
-checkWin(depositAmount, lines, betAmount, spun);
+game();
